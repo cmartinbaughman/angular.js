@@ -207,28 +207,29 @@ docsApp.directive.sourceEdit = function(getEmbeddedTemplate) {
   }
 };
 
-docsApp.directive.docModuleComponents = ['sections', function(sections) {
+docsApp.directive.docModuleComponents = function() {
   return {
     template: '  <div class="component-breakdown">' +
               '    <h2>Module Components</h2>' +
-              '    <div ng-repeat="(key, section) in components">' + 
-              '      <h3 class="component-heading" id="{{ section.type }}">{{ section.title }}</h3>' + 
-              '      <table class="definition-table">' + 
-              '        <tr>' + 
-              '          <th>Name</th>' + 
-              '          <th>Description</th>' + 
-              '        </tr>' + 
-              '        <tr ng-repeat="component in section.components">' + 
-              '          <td><a ng-href="{{ component.url }}">{{ component.shortName }}</a></td>' + 
-              '          <td>{{ component.shortDescription }}</td>' + 
-              '        </tr>' + 
-              '      </table>' + 
+              '    <div ng-repeat="(key, section) in components">' +
+              '      <h3 class="component-heading" id="{{ section.type }}">{{ section.title }}</h3>' +
+              '      <table class="definition-table">' +
+              '        <tr>' +
+              '          <th>Name</th>' +
+              '          <th>Description</th>' +
+              '        </tr>' +
+              '        <tr ng-repeat="component in section.components">' +
+              '          <td><a ng-href="{{ component.url }}">{{ component.shortName }}</a></td>' +
+              '          <td>{{ component.shortDescription }}</td>' +
+              '        </tr>' +
+              '      </table>' +
               '    </div>' +
               '  </div>',
     scope : {
       module : '@docModuleComponents'
     },
-    controller : ['$scope', function($scope) {
+    controller : ['$scope', '$anchorScroll', '$timeout', 'sections',
+      function($scope, $anchorScroll, $timeout, sections) {
       var validTypes = ['property','function','directive','service','object','filter'];
       var components = {};
       angular.forEach(sections.api, function(item) {
@@ -239,16 +240,17 @@ docsApp.directive.docModuleComponents = ['sections', function(sections) {
             components[type] = components[type] || {
               title : type,
               type : type,
-              components : [] 
+              components : []
             };
             components[type].components.push(item);
           }
         }
       });
       $scope.components = components;
+      $timeout($anchorScroll, 0, false);
     }]
   };
-}]
+};
 
 docsApp.directive.docTutorialNav = function(templateMerge) {
   var pages = [
@@ -411,7 +413,7 @@ docsApp.serviceFactory.prepareDefaultAppModule = function() {
     var moduleName = 'App';
     return {
       module : moduleName,
-      script : "angular.module('" + moduleName + "', [" + 
+      script : "angular.module('" + moduleName + "', [" +
           (deps.length ? "'" + deps.join("','") + "'" : "") + "]);\n\n"
     };
   };
@@ -678,7 +680,6 @@ docsApp.controller.DocsController = function($scope, $location, $window, $cookie
     var currentPageId = $location.path();
     $scope.partialTitle = $scope.currentPage.shortName;
     $window._gaq.push(['_trackPageview', currentPageId]);
-    loadDisqus(currentPageId);
   };
 
   /** stores a cookie that is used by apache to decide which manifest ot send */
@@ -709,7 +710,7 @@ docsApp.controller.DocsController = function($scope, $location, $window, $cookie
     error: 'Error Reference'
   };
 
-  populateComponentsList(); 
+  populateComponentsList();
 
   $scope.$watch(function docsPathWatch() {return $location.path(); }, function docsPathWatchAction(path) {
     // ignore non-doc links which are used in examples
@@ -889,29 +890,6 @@ docsApp.controller.DocsController = function($scope, $location, $window, $cookie
       }
       return namespace;
     }
-  }
-
-
-  function loadDisqus(currentPageId) {
-    // http://docs.disqus.com/help/2/
-    window.disqus_shortname = 'angularjs-next';
-    window.disqus_identifier = currentPageId;
-    window.disqus_url = 'http://docs.angularjs.org' + currentPageId;
-
-    if ($location.host() == 'localhost') {
-      return; // don't display disqus on localhost, comment this out if needed
-      //window.disqus_developer = 1;
-    }
-
-    // http://docs.disqus.com/developers/universal/
-    (function() {
-      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-      dsq.src = 'http://angularjs.disqus.com/embed.js';
-      (document.getElementsByTagName('head')[0] ||
-        document.getElementsByTagName('body')[0]).appendChild(dsq);
-    })();
-
-    angular.element(document.getElementById('disqus_thread')).html('');
   }
 };
 
